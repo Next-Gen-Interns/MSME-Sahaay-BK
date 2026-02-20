@@ -1,0 +1,121 @@
+1. users Table
+Field Name	Data Type	Constraints / Notes
+user_id	INT AUTO_INCREMENT	PRIMARY KEY
+email	VARCHAR(255)	UNIQUE, NOT NULL
+password	VARCHAR(255)	NOT NULL (hashed)
+phone	VARCHAR(15)	NULLABLE
+role	ENUM('admin','buyer','seller')	NOT NULL, default 'buyer'
+last_login	DATETIME	NULLABLE
+status	ENUM('active','inactive','suspended')	DEFAULT 'active'
+avatar_url	VARCHAR(255)	NULLABLE
+bio	TEXT	NULLABLE
+country	VARCHAR(100)	NULLABLE
+state	VARCHAR(100)	NULLABLE
+address	TEXT	NULLABLE
+pincode	VARCHAR(10)	NULLABLE
+is_verified	BOOLEAN	DEFAULT FALSE
+created_at	DATETIME	DEFAULT CURRENT_TIMESTAMP
+updated_at	DATETIME	DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+
+2. seller_profile Table
+Field Name	Data Type	Constraints / Notes
+seller_id	INT	PRIMARY KEY, FOREIGN KEY REFERENCES users(user_id) ON DELETE CASCADE
+business_name	VARCHAR(255)	NOT NULL
+business_description  TEXT	NULLABLE
+product_categories	TEXT	NULLABLE
+certifications	TEXT	NULLABLE
+verification_status	ENUM('pending','verified','rejected')	DEFAULT 'pending'
+subscription_plan	ENUM('free','premium')	DEFAULT 'free'
+profile_views	INT	DEFAULT 0
+leads_received	INT	DEFAULT 0
+overall_rating INT	DEFAULT 0
+created_at	DATETIME	DEFAULT CURRENT_TIMESTAMP
+updated_at	DATETIME	DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+
+3. buyer_profile Table (Optimized for Your Website)
+Field Name	Data Type	Constraints / Notes
+buyer_id	INT	PRIMARY KEY, FOREIGN KEY REFERENCES users(user_id) ON DELETE CASCADE
+full_name	VARCHAR(255)	Buyer’s real/full name
+company_name	VARCHAR(255)	Optional (only if buyer is a business)
+location TEXT	Buyer’s saved shipping/billing address
+created_at	DATETIME	DEFAULT CURRENT_TIMESTAMP
+updated_at	DATETIME	DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+
+
+4. user_documents Table
+Field Name	Data Type	Constraints / Notes
+id	INT AUTO_INCREMENT	PRIMARY KEY
+user_id	INT	FOREIGN KEY REFERENCES users(user_id) ON DELETE CASCADE
+document_type	VARCHAR(100)	e.g., ID Proof, Address Proof
+document_name	VARCHAR(255)	Name of document
+document_url	VARCHAR(255)	URL of document stored in cloud
+verified	BOOLEAN	DEFAULT FALSE
+verified_by	INT	Nullable, references users(user_id) of admin
+verified_at	DATETIME	Nullable
+created_at	DATETIME	DEFAULT CURRENT_TIMESTAMP
+
+
+
+5. password_reset_tokens Table
+Field Name	Data Type	Constraints / Notes
+id	INT AUTO_INCREMENT	PRIMARY KEY
+user_id	INT	FOREIGN KEY REFERENCES users(user_id) ON DELETE CASCADE
+token	VARCHAR(255)	UNIQUE, NOT NULL
+expires_at	DATETIME	Token expiration time
+used	BOOLEAN	DEFAULT FALSE (mark if token was already used)
+created_at	DATETIME	DEFAULT CURRENT_TIMESTAMP
+
+
+Verification Badges	badge_id (PK)
+Verification Badges	badge_name ('email_verified', 'phone_verified', 'msme_verified', 'gst_registered', 'iso_certified')
+Verification Badges	badge_description
+Verification Badges	verification_requirements
+
+
+Seller Verifications	verification_id (PK)
+Seller Verifications	seller_id (FK to Seller Profile)
+Seller Verifications	badge_id (FK to Verification Badges)
+Seller Verifications	verification_status ('pending', 'approved', 'rejected')
+Seller Verifications	document_path
+Seller Verifications	verified_at
+Seller Verifications	verified_by (FK to User for admin)
+Seller Verifications	notes
+
+
+Category	category_id (PK)
+Category	category_name
+Category	parent_category_id (FK to Category for subcategories)
+Category	description
+Category	is_active
+
+
+Listing	listing_id (PK)
+Listing	seller_id (FK to Seller Profile)
+Listing	title
+Listing	description
+Listing	price
+Listing	price_type ('fixed', 'range', 'hourly')
+Listing	category_id (FK to Category)
+Listing	delivery_time
+Listing	service_area
+Listing	response_time
+Listing	status ('draft', 'pending_approval', 'active', 'paused', 'rejected')
+Listing	created_at
+Listing	updated_at
+Listing	approved_at
+Listing	approved_by (FK to User for admin)
+Listing	rejection_reason
+
+
+
+Listing Images/Documents	media_id (PK)
+Listing Images/Documents	listing_id (FK to Listing)
+Listing Images/Documents	file_path
+Listing Images/Documents	file_type ('image', 'document')
+Listing Images/Documents	upload_date
+Listing Images/Documents	is_primary
+
+

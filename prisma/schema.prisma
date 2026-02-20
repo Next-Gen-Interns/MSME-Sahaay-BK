@@ -1,0 +1,528 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id               Int                  @id @default(autoincrement())
+  email                 String               @unique(map: "User_email_key")
+  password              String
+  phone                 String?
+  role                  UserRole             @default(buyer)
+  fullname              String
+  last_login            DateTime?
+  status                UserStatus           @default(active)
+  avatar_url            String?
+  bio                   String? @db.LongText
+  country               String?
+  state                 String?
+  city                  String?    
+  address               String? @db.LongText
+  pincode               String?
+  is_verified           Boolean              @default(false)
+  created_at            DateTime             @default(now())
+  updated_at            DateTime             @updatedAt
+  buyerprofile          BuyerProfile?
+  lead_conversations    LeadConversation[]
+  password_reset_tokens PasswordResetToken[]
+  received_reviews      Review[]             @relation("ReviewedUserReviews")
+  sent_reviews          Review[]             @relation("ReviewerReviews")
+  sellerprofile         SellerProfile?
+  user_documents        UserDocument[]
+  reviewFlags           ReviewFlag[]
+  password_reset_otps   PasswordResetOTP[]
+  userSubscriptions     UserSubscription[]
+  subscriptionUsages    SubscriptionUsage[]
+
+  @@map("user")
+}
+
+model BuyerProfile {
+  buyer_id     Int      @id @default(autoincrement())
+  user_id      Int      @unique
+  full_name    String
+  company_name String?
+  country      String?  
+  state        String? 
+  city         String? 
+  address      String? @db.LongText 
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  user         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  leads        Lead[]   @relation("BuyerLeads")
+  reviews      Review[] @relation("BuyerReviews")
+
+  @@map("buyerprofile")
+}
+
+model SellerProfile {
+  seller_id             Int                @id @default(autoincrement())
+  user_id               Int                @unique
+  business_name         String
+  business_description  String?            @db.LongText
+  product_categories    String?
+  certifications        String?
+  verification_status   VerificationStatus @default(pending)
+  subscription_plan     LegacyPlanLevel    @default(free)
+  profile_views         Int                @default(0)
+  leads_received        Int                @default(0)
+  overall_rating        Int                @default(0)
+  created_at            DateTime           @default(now())
+  updated_at            DateTime           @updatedAt
+  average_response_time Float?
+  business_type_id      Int?
+  years_in_business     Int?
+  leads                 Lead[]             @relation("SellerLeads")
+  reviews               Review[]           @relation("SellerReviews")
+  business_type         BusinessType?      @relation(fields: [business_type_id], references: [business_type_id], onDelete: SetNull)
+  user                  User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  service_listings      ServiceListing[]
+  business_addresses    BusinessAddress[]
+
+  @@index([business_type_id], map: "sellerprofile_business_type_id_fkey")
+  @@map("sellerprofile")
+}
+
+model BusinessAddress {
+  address_id        Int            @id @default(autoincrement())
+  seller_id         Int
+  business_country  String
+  business_state    String
+  business_city     String
+  business_address  String? @db.LongText
+  is_primary        Boolean        @default(false)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  seller            SellerProfile  @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+
+  @@index([seller_id], map: "businessaddress_seller_id_fkey")
+  @@map("businessaddress")
+}
+
+model UserDocument {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  document_type String
+  document_name String
+  document_url  String
+  verified      Boolean   @default(false)
+  verified_by   Int?
+  verified_at   DateTime?
+  created_at    DateTime  @default(now())
+  user          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "userdocument_user_id_fkey")
+  @@map("userdocument")
+}
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "passwordresettoken_user_id_fkey")
+  @@map("passwordresettoken")
+}
+
+model PasswordResetOTP {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  email      String
+  otp_code   String   @unique
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id])
+  @@index([user_id], map: "passwordresetotp_user_id_fkey")
+  @@map("passwordresetotp")
+}
+
+model Category {
+  category_id        Int              @id @default(autoincrement())
+  category_name      String
+  description        String?
+  icon               String?
+  image_url          String?
+  sort_order         Int              @default(0)
+  is_active          Boolean          @default(true)
+  created_at         DateTime         @default(now())
+  parent_category_id Int?
+  parent_category    Category?        @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id], onDelete: SetNull)
+  child_categories   Category[]       @relation("CategoryHierarchy")
+
+  service_listings       ServiceListing[] @relation("ListingCategory")
+  subcategory_listings   ServiceListing[] @relation("ListingSubcategory")
+
+  @@index([parent_category_id], map: "category_parent_category_id_fkey")
+  @@map("category")
+}
+
+model ServiceListing {
+  listing_id         Int            @id @default(autoincrement())
+  title              String
+  description        String? @db.LongText
+  service_type       ServiceType
+  pricing_model      PricingModel
+  min_price          Float?
+  max_price          Float?
+  estimated_timeline String?
+  service_areas      Json?
+  service_countries  Json?
+  service_states     Json?       
+  service_cities     Json? 
+  status             ListingStatus  @default(draft)
+  tags               Json?
+  featured           Boolean        @default(false)
+  view_count         Int            @default(0)
+  lead_count         Int            @default(0)
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+  seller_id          Int
+  category_id        Int
+  subcategory_id     Int?
+  leads              Lead[]
+  listing_media      ListingMedia[]
+
+  category           Category       @relation("ListingCategory", fields: [category_id], references: [category_id], onDelete: Cascade)
+  subcategory        Category?      @relation("ListingSubcategory", fields: [subcategory_id], references: [category_id], onDelete: SetNull)
+  seller             SellerProfile  @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+
+  @@index([category_id], map: "servicelisting_category_id_fkey")
+  @@index([subcategory_id], map: "servicelisting_subcategory_id_fkey")
+  @@index([seller_id], map: "servicelisting_seller_id_fkey")
+  @@index([status, category_id])
+  @@index([status, service_type])
+  @@index([status, min_price, max_price])
+  @@index([status, featured])
+  @@index([status, created_at])
+  @@index([status, view_count])
+  @@map("servicelisting")
+}
+
+model Lead {
+  lead_id             Int                @id @default(autoincrement())
+  project_title       String?
+  project_description String?
+  budget_range        BudgetRange?
+  timeline            ProjectTimeline?
+  contact_preference  ContactPreference
+  custom_requirements String?
+  is_urgent           Boolean            @default(false)
+  status              LeadStatus         @default(new)
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  listing_id          Int
+  buyer_id            Int
+  seller_id           Int
+  buyer               BuyerProfile       @relation("BuyerLeads", fields: [buyer_id], references: [buyer_id], onDelete: Cascade)
+  listing             ServiceListing     @relation(fields: [listing_id], references: [listing_id], onDelete: Cascade)
+  seller              SellerProfile      @relation("SellerLeads", fields: [seller_id], references: [seller_id], onDelete: Cascade)
+  conversations       LeadConversation[]
+  reviews             Review[]
+
+  @@index([buyer_id], map: "lead_buyer_id_fkey")
+  @@index([listing_id], map: "lead_listing_id_fkey")
+  @@index([seller_id], map: "lead_seller_id_fkey")
+  @@map("lead")
+}
+
+model LeadConversation {
+  conversation_id Int         @id @default(autoincrement())
+  message_type    MessageType @default(initial_inquiry)
+  message_text    String
+  attachments     Json?
+  internal_notes  Boolean     @default(false)
+  created_at      DateTime    @default(now())
+  lead_id         Int
+  participant_id  Int
+  delivered_at    DateTime?
+  read_at         DateTime?
+  is_read         Boolean     @default(false)
+
+  lead            Lead        @relation(fields: [lead_id], references: [lead_id], onDelete: Cascade)
+  participant     User        @relation(fields: [participant_id], references: [user_id], onDelete: Cascade)
+
+  @@index([lead_id], map: "leadconversation_lead_id_fkey")
+  @@index([participant_id], map: "leadconversation_participant_id_fkey")
+  @@map("leadconversation")
+}
+
+model Review {
+  review_id        Int           @id @default(autoincrement())
+  rating           Int
+  review_text      String?
+  review_type      ReviewType
+  is_public        Boolean       @default(true)
+  status           ReviewStatus  @default(pending)
+  created_at       DateTime      @default(now())
+  lead_id          Int
+  buyer_id         Int
+  seller_id        Int
+  reviewer_id      Int
+  reviewed_user_id Int
+  buyer            BuyerProfile  @relation("BuyerReviews", fields: [buyer_id], references: [buyer_id], onDelete: Cascade)
+  lead             Lead          @relation(fields: [lead_id], references: [lead_id], onDelete: Cascade)
+  reviewed_user    User          @relation("ReviewedUserReviews", fields: [reviewed_user_id], references: [user_id], onDelete: Cascade)
+  reviewer         User          @relation("ReviewerReviews", fields: [reviewer_id], references: [user_id], onDelete: Cascade)
+  seller           SellerProfile @relation("SellerReviews", fields: [seller_id], references: [seller_id], onDelete: Cascade)
+  flags            ReviewFlag[]
+
+  @@index([buyer_id], map: "review_buyer_id_fkey")
+  @@index([lead_id], map: "review_lead_id_fkey")
+  @@index([reviewed_user_id], map: "review_reviewed_user_id_fkey")
+  @@index([reviewer_id], map: "review_reviewer_id_fkey")
+  @@index([seller_id], map: "review_seller_id_fkey")
+  @@map("review")
+}
+
+model ListingMedia {
+  listing_media_id Int            @id @default(autoincrement())
+  file_path        String
+  file_type        MediaType
+  caption          String?
+  sort_order       Int            @default(0)
+  created_at       DateTime       @default(now())
+  listing_id       Int
+  listing          ServiceListing @relation(fields: [listing_id], references: [listing_id], onDelete: Cascade)
+
+  @@index([listing_id], map: "listingmedia_listing_id_fkey")
+  @@map("listingmedia")
+}
+
+model BusinessType {
+  business_type_id Int             @id @default(autoincrement())
+  name             String
+  description      String?
+  created_at       DateTime        @default(now())
+  sellers          SellerProfile[]
+
+  @@map("businesstype")
+}
+
+model ReviewFlag {
+  flag_id    Int      @id @default(autoincrement())
+  review_id  Int
+  user_id    Int
+  reason     String
+  created_at DateTime @default(now())
+
+  review Review @relation(fields: [review_id], references: [review_id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([review_id, user_id])
+  @@map("reviewflag")
+}
+
+model SubscriptionPlan {
+  plan_id           Int                @id @default(autoincrement())
+  name              String
+  description       String?
+  price             Float
+  currency          String             @default("USD")
+  billing_cycle     BillingCycle       @default(monthly)
+  plan_type         PlanType
+  features          Json
+  limits            Json
+  is_active         Boolean            @default(true)
+  sort_order        Int                @default(0)
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  userSubscriptions UserSubscription[]
+
+  @@map("subscriptionplan")
+}
+
+model UserSubscription {
+  subscription_id        Int                 @id @default(autoincrement())
+  user_id                Int
+  plan_id                Int
+  status                 SubscriptionStatus  @default(active)
+  current_period_start   DateTime
+  current_period_end     DateTime
+  cancel_at_period_end   Boolean             @default(false)
+  canceled_at            DateTime?
+  stripe_subscription_id String?
+  stripe_customer_id     String?
+  created_at             DateTime            @default(now())
+  updated_at             DateTime            @updatedAt
+  user                   User                @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  plan                   SubscriptionPlan    @relation(fields: [plan_id], references: [plan_id], onDelete: Restrict)
+  usage                  SubscriptionUsage[]
+
+  @@unique([user_id], map: "UserSubscription_user_id_key")
+  @@index([plan_id], map: "usersubscription_plan_id_fkey")
+  @@map("usersubscription")
+}
+
+model SubscriptionUsage {
+  usage_id        Int         @id @default(autoincrement())
+  subscription_id Int?
+  user_id         Int
+  feature_type    FeatureType
+  usage_count     Int         @default(0)
+  reset_date      DateTime
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  subscription UserSubscription? @relation(fields: [subscription_id], references: [subscription_id], onDelete: Cascade)
+  user         User             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([subscription_id, feature_type, reset_date], map: "subscriptionusage_feature_unique")
+  @@index([user_id], map: "subscriptionusage_user_id_fkey")
+  @@map("subscriptionusage")
+}
+
+// Enums remain the same...
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+  unpaid
+  incomplete
+  incomplete_expired
+  trialing
+}
+
+enum BillingCycle {
+  monthly
+  quarterly
+  yearly
+  lifetime
+}
+
+enum PlanType {
+  buyer
+  seller
+  both
+}
+
+enum FeatureType {
+  service_listings
+  featured_listings
+  lead_access
+  portfolio_items
+  analytics_access
+  premium_support
+  lead_creation
+  premium_search
+  seller_contact
+  project_management
+  saved_searches
+}
+
+enum UserRole {
+  super_admin
+  access_admin
+  admin
+  buyer
+  seller
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum LegacyPlanLevel {
+  free
+  premium
+}
+
+enum ServiceType {
+  one_time
+  ongoing
+  consultation
+  project_based
+}
+
+enum PricingModel {
+  fixed
+  hourly
+  daily
+  custom_quote
+}
+
+enum ListingStatus {
+  draft
+  active
+  inactive
+}
+
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  proposal_sent
+  negotiation
+  won
+  lost
+}
+
+enum BudgetRange {
+  under_1k
+  k_1_5
+  k_5_10
+  k_10_25
+  k_25_50
+  k_50_100
+  k_100_plus
+}
+
+enum ProjectTimeline {
+  immediately
+  weeks_1_2
+  month_1
+  flexible
+}
+
+enum ContactPreference {
+  email
+  phone
+  video_call
+  in_person
+}
+
+enum MessageType {
+  initial_inquiry
+  follow_up
+  proposal
+  negotiation
+}
+
+enum ReviewType {
+  buyer_to_seller
+  seller_to_buyer
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+enum MediaType {
+  image
+  video
+  document
+  portfolio
+}
