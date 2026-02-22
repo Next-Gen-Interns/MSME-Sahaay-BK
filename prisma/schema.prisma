@@ -74,17 +74,13 @@ model SellerProfile {
   overall_rating        Int                @default(0)
   created_at            DateTime           @default(now())
   updated_at            DateTime           @updatedAt
-  average_response_time Float?
-  business_type_id      Int?
   years_in_business     Int?
   leads                 Lead[]             @relation("SellerLeads")
   reviews               Review[]           @relation("SellerReviews")
-  business_type         BusinessType?      @relation(fields: [business_type_id], references: [business_type_id], onDelete: SetNull)
   user                  User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   service_listings      ServiceListing[]
   business_addresses    BusinessAddress[]
 
-  @@index([business_type_id], map: "sellerprofile_business_type_id_fkey")
   @@map("sellerprofile")
 }
 
@@ -307,7 +303,6 @@ model BusinessType {
   name             String
   description      String?
   created_at       DateTime        @default(now())
-  sellers          SellerProfile[]
 
   @@map("businesstype")
 }

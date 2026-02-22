@@ -23,6 +23,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const prisma = new PrismaClient();
+const Ip = process.env.IP;
 
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
@@ -31,6 +32,7 @@ const io = new SocketIOServer(server, {
       "https://msmeguru.crmnextgen.in",
       "http://localhost:3000",
       "http://localhost:3001",
+      Ip,
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
@@ -46,6 +48,7 @@ app.use(
       "https://msmeguru.crmnextgen.in",
       "http://localhost:3000",
       "http://localhost:3001",
+      Ip,
     ],
     credentials: true,
   }),
