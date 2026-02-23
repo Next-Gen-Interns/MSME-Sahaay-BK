@@ -18,15 +18,16 @@ model User {
   last_login            DateTime?
   status                UserStatus           @default(active)
   avatar_url            String?
-  bio                   String? @db.LongText
+  bio                   String?              @db.LongText
   country               String?
   state                 String?
-  city                  String?    
-  address               String? @db.LongText
+  city                  String?
+  address               String?              @db.LongText
   pincode               String?
   is_verified           Boolean              @default(false)
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
+  platform_feedbacks    PlatformFeedback[]
   buyerprofile          BuyerProfile?
   lead_conversations    LeadConversation[]
   password_reset_tokens PasswordResetToken[]
@@ -38,6 +39,7 @@ model User {
   password_reset_otps   PasswordResetOTP[]
   userSubscriptions     UserSubscription[]
   subscriptionUsages    SubscriptionUsage[]
+  favourites            Favourite[]
 
   @@map("user")
 }
@@ -47,10 +49,10 @@ model BuyerProfile {
   user_id      Int      @unique
   full_name    String
   company_name String?
-  country      String?  
-  state        String? 
-  city         String? 
-  address      String? @db.LongText 
+  country      String?
+  state        String?
+  city         String?
+  address      String?  @db.LongText
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
   user         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
@@ -89,17 +91,17 @@ model SellerProfile {
 }
 
 model BusinessAddress {
-  address_id        Int            @id @default(autoincrement())
-  seller_id         Int
-  business_country  String
-  business_state    String
-  business_city     String
-  business_address  String? @db.LongText
-  is_primary        Boolean        @default(false)
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
+  address_id       Int      @id @default(autoincrement())
+  seller_id        Int
+  business_country String
+  business_state   String
+  business_city    String
+  business_address String?  @db.LongText
+  is_primary       Boolean  @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
-  seller            SellerProfile  @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+  seller SellerProfile @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
 
   @@index([seller_id], map: "businessaddress_seller_id_fkey")
   @@map("businessaddress")
@@ -151,20 +153,20 @@ model PasswordResetOTP {
 }
 
 model Category {
-  category_id        Int              @id @default(autoincrement())
+  category_id        Int        @id @default(autoincrement())
   category_name      String
   description        String?
   icon               String?
   image_url          String?
-  sort_order         Int              @default(0)
-  is_active          Boolean          @default(true)
-  created_at         DateTime         @default(now())
+  sort_order         Int        @default(0)
+  is_active          Boolean    @default(true)
+  created_at         DateTime   @default(now())
   parent_category_id Int?
-  parent_category    Category?        @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id], onDelete: SetNull)
-  child_categories   Category[]       @relation("CategoryHierarchy")
+  parent_category    Category?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id], onDelete: SetNull)
+  child_categories   Category[] @relation("CategoryHierarchy")
 
-  service_listings       ServiceListing[] @relation("ListingCategory")
-  subcategory_listings   ServiceListing[] @relation("ListingSubcategory")
+  service_listings     ServiceListing[] @relation("ListingCategory")
+  subcategory_listings ServiceListing[] @relation("ListingSubcategory")
 
   @@index([parent_category_id], map: "category_parent_category_id_fkey")
   @@map("category")
@@ -173,7 +175,7 @@ model Category {
 model ServiceListing {
   listing_id         Int            @id @default(autoincrement())
   title              String
-  description        String? @db.LongText
+  description        String?        @db.LongText
   service_type       ServiceType
   pricing_model      PricingModel
   min_price          Float?
@@ -181,8 +183,8 @@ model ServiceListing {
   estimated_timeline String?
   service_areas      Json?
   service_countries  Json?
-  service_states     Json?       
-  service_cities     Json? 
+  service_states     Json?
+  service_cities     Json?
   status             ListingStatus  @default(draft)
   tags               Json?
   featured           Boolean        @default(false)
@@ -195,10 +197,11 @@ model ServiceListing {
   subcategory_id     Int?
   leads              Lead[]
   listing_media      ListingMedia[]
+  favourites         Favourite[]
 
-  category           Category       @relation("ListingCategory", fields: [category_id], references: [category_id], onDelete: Cascade)
-  subcategory        Category?      @relation("ListingSubcategory", fields: [subcategory_id], references: [category_id], onDelete: SetNull)
-  seller             SellerProfile  @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+  category    Category      @relation("ListingCategory", fields: [category_id], references: [category_id], onDelete: Cascade)
+  subcategory Category?     @relation("ListingSubcategory", fields: [subcategory_id], references: [category_id], onDelete: SetNull)
+  seller      SellerProfile @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
 
   @@index([category_id], map: "servicelisting_category_id_fkey")
   @@index([subcategory_id], map: "servicelisting_subcategory_id_fkey")
@@ -210,6 +213,21 @@ model ServiceListing {
   @@index([status, created_at])
   @@index([status, view_count])
   @@map("servicelisting")
+}
+
+
+model Favourite {
+  favourite_id Int @id @default(autoincrement())
+  user_id      Int
+  listing_id   Int
+  created_at   DateTime @default(now())
+
+  user     User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  listing  ServiceListing @relation(fields: [listing_id], references: [listing_id], onDelete: Cascade)
+
+  @@unique([user_id, listing_id])
+  @@index([user_id])
+  @@index([listing_id])
 }
 
 model Lead {
@@ -252,8 +270,8 @@ model LeadConversation {
   read_at         DateTime?
   is_read         Boolean     @default(false)
 
-  lead            Lead        @relation(fields: [lead_id], references: [lead_id], onDelete: Cascade)
-  participant     User        @relation(fields: [participant_id], references: [user_id], onDelete: Cascade)
+  lead        Lead @relation(fields: [lead_id], references: [lead_id], onDelete: Cascade)
+  participant User @relation(fields: [participant_id], references: [user_id], onDelete: Cascade)
 
   @@index([lead_id], map: "leadconversation_lead_id_fkey")
   @@index([participant_id], map: "leadconversation_participant_id_fkey")
@@ -378,11 +396,35 @@ model SubscriptionUsage {
   updated_at      DateTime    @updatedAt
 
   subscription UserSubscription? @relation(fields: [subscription_id], references: [subscription_id], onDelete: Cascade)
-  user         User             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user         User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@unique([subscription_id, feature_type, reset_date], map: "subscriptionusage_feature_unique")
   @@index([user_id], map: "subscriptionusage_user_id_fkey")
   @@map("subscriptionusage")
+}
+
+model PlatformFeedback {
+  feedback_id Int   @id @default(autoincrement())
+  user_id     Int?
+  user        User? @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
+
+  name      String?
+  email     String?
+  company   String?
+  user_type String
+
+  feedback_type String
+  rating        Int?
+  subject       String
+  message       String  @db.LongText
+  file_url      String?
+  consent       Boolean
+
+  status     FeedbackStatus @default(pending)
+  created_at DateTime       @default(now())
+
+  @@index([user_id])
+  @@map("platformfeedback")
 }
 
 // Enums remain the same...
@@ -394,6 +436,13 @@ enum SubscriptionStatus {
   incomplete
   incomplete_expired
   trialing
+}
+
+enum FeedbackStatus {
+  pending
+  reviewed
+  resolved
+  rejected
 }
 
 enum BillingCycle {
