@@ -27,7 +27,7 @@ router.post("/:id/conversations", authenticate, addLeadConversation);
 router.patch(
   "/:id/conversations/:conversationId/read",
   authenticate,
-  markConversationRead
+  markConversationRead,
 );
 router.get("/:id/unread-count", authenticate, getUnreadCount);
 

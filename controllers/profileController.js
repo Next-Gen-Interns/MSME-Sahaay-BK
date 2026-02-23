@@ -46,7 +46,6 @@ const calculateSellerProfileCompletion = (sellerProfile) => {
     sellerProfile.business_name,
     sellerProfile.business_description,
     sellerProfile.product_categories,
-    sellerProfile.business_type_id,
     sellerProfile.years_in_business,
     sellerProfile.certifications,
   ];
@@ -409,7 +408,6 @@ export const createSellerProfile = async (req, res) => {
       business_description,
       product_categories,
       certifications,
-      business_type_id,
       years_in_business,
       business_address, // expected as an object
     } = req.body;
@@ -460,7 +458,6 @@ export const createSellerProfile = async (req, res) => {
         business_description,
         product_categories,
         certifications,
-        business_type_id,
         years_in_business,
         business_addresses: addressData, // ✅ relation name matches schema
       },
@@ -589,7 +586,6 @@ export const updateSellerProfile = async (req, res) => {
       "business_description",
       "product_categories",
       "certifications",
-      "business_type_id",
       "years_in_business",
     ];
 

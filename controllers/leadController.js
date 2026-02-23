@@ -143,11 +143,13 @@ const prisma = new PrismaClient();
 //     res.status(500).json({ error: "Internal Server Error" });
 //   }
 // };
-// Create a new lead (Any user can send inquiry to seller)
+
 export const createLead = async (req, res) => {
   try {
-    // Remove the buyer-only restriction
-    // Allow all authenticated users to create leads
+    // Remove the role restriction - allow any authenticated user
+    // if (req.user.role !== "buyer") {
+    //   return res.status(403).json({ error: "Only buyers can create leads" });
+    // }
 
     // const usageCheck = await checkUsageLimit(req.user.user_id, "lead_creation");
     // if (!usageCheck.allowed) {
@@ -169,29 +171,42 @@ export const createLead = async (req, res) => {
       is_urgent = false,
     } = req.body;
 
-    // Check if user has a buyer profile, if not create one automatically
-    let buyerProfile = await prisma.buyerProfile.findUnique({
+    // Get user information to determine their profile type
+    const user = await prisma.user.findUnique({
       where: { user_id: req.user.user_id },
+      include: {
+        buyerprofile: true,
+        sellerprofile: true,
+      },
     });
 
-    // If no buyer profile exists, create one automatically
-    if (!buyerProfile) {
-      try {
-        buyerProfile = await prisma.buyerProfile.create({
-          data: {
-            user_id: req.user.user_id,
-            // Add default values for required fields
-            // Adjust these based on your BuyerProfile model requirements
-            preferred_contact_method: contact_preference || "email",
-            // Add other default fields as needed
-          },
-        });
-      } catch (profileError) {
-        console.error("Error creating buyer profile:", profileError);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Determine if the user is a buyer or seller and get the appropriate profile
+    let buyerProfile = null;
+    let sellerProfile = null;
+
+    if (
+      user.role === "buyer" ||
+      user.role === "super_admin" ||
+      user.role === "admin" ||
+      user.role === "access_admin"
+    ) {
+      buyerProfile = user.buyerprofile;
+      if (!buyerProfile) {
         return res.status(400).json({
           error:
-            "Could not create buyer profile automatically. Please complete your profile first.",
-          requiresProfileSetup: true,
+            "Buyer profile not found. Please complete your buyer profile first.",
+        });
+      }
+    } else if (user.role === "seller") {
+      sellerProfile = user.sellerprofile;
+      if (!sellerProfile) {
+        return res.status(400).json({
+          error:
+            "Seller profile not found. Please complete your seller profile first.",
         });
       }
     }
@@ -212,10 +227,13 @@ export const createLead = async (req, res) => {
       return res.status(400).json({ error: "This listing is not active" });
     }
 
-    // Prevent users from creating leads on their own listings
-    if (listing.seller.user_id === req.user.user_id) {
+    // Prevent sellers from creating leads on their own listings
+    if (
+      user.role === "seller" &&
+      listing.seller_id === sellerProfile?.seller_id
+    ) {
       return res.status(400).json({
-        error: "You cannot create a lead on your own listing",
+        error: "You cannot create a lead for your own listing",
       });
     }
 
@@ -231,7 +249,14 @@ export const createLead = async (req, res) => {
         is_urgent,
         status: "new",
         listing_id: parseInt(listing_id),
-        buyer_id: buyerProfile.buyer_id,
+        // For buyer profiles, use buyer_id; for seller profiles (inquiring about another seller's listing), we need to handle differently
+        // Since the Lead model requires a buyer_id, we need to either:
+        // 1. Create a buyer profile for sellers if they don't have one, or
+        // 2. Modify the database schema to allow leads from sellers
+        // For now, I'll assume we create a buyer profile for sellers when they inquire
+        buyer_id: buyerProfile
+          ? buyerProfile.buyer_id
+          : await getOrCreateBuyerProfileForSeller(user.user_id, user, prisma),
         seller_id: listing.seller_id,
       },
       include: {
@@ -260,7 +285,6 @@ export const createLead = async (req, res) => {
                 email: true,
                 phone: true,
                 fullname: true,
-                role: true, // Include role to identify user type
               },
             },
           },
@@ -285,20 +309,20 @@ export const createLead = async (req, res) => {
       data: { leads_received: { increment: 1 } },
     });
 
-    // await incrementUsage(req.user.user_id, "lead_creation");
+    // Create an initial conversation message
+    await prisma.leadConversation.create({
+      data: {
+        lead_id: lead.lead_id,
+        participant_id: req.user.user_id,
+        message_type: "initial_inquiry",
+        message_text:
+          project_description || `Initial inquiry about ${listing.title}`,
+        attachments: [],
+        internal_notes: false,
+      },
+    });
 
-    // Add a note about the user's role in the first conversation (optional)
-    if (req.user.role !== "buyer") {
-      await prisma.leadConversation.create({
-        data: {
-          message_type: "system",
-          message_text: `This inquiry was sent by a ${req.user.role}.`,
-          internal_notes: true, // Make it internal note for seller only
-          lead_id: lead.lead_id,
-          participant_id: req.user.user_id,
-        },
-      });
-    }
+    // await incrementUsage(req.user.user_id, "lead_creation");
 
     res.status(201).json({
       message: "Lead created successfully",
@@ -319,14 +343,43 @@ export const createLead = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+async function getOrCreateBuyerProfileForSeller(userId, user, prisma) {
+  // First check if the user already has a buyer profile
+  const existingBuyerProfile = await prisma.buyerProfile.findUnique({
+    where: { user_id: userId },
+  });
+
+  if (existingBuyerProfile) {
+    return existingBuyerProfile.buyer_id;
+  }
+
+  // If not, create one using seller profile information or user information
+  const sellerProfile = user.sellerprofile;
+
+  const newBuyerProfile = await prisma.buyerProfile.create({
+    data: {
+      user_id: userId,
+      full_name: user.fullname,
+      company_name: sellerProfile?.business_name || null,
+      country: user.country || null,
+      state: user.state || null,
+      city: user.city || null,
+      address: user.address || null,
+    },
+  });
+
+  return newBuyerProfile.buyer_id;
+}
+
 // Get buyer's own leads
 export const getBuyerLeads = async (req, res) => {
   try {
-    if (req.user.role !== "buyer") {
-      return res
-        .status(403)
-        .json({ error: "Only buyers can view their leads" });
-    }
+    // if (req.user.role !== "buyer") {
+    //   return res
+    //     .status(403)
+    //     .json({ error: "Only buyers can view their leads" });
+    // }
 
     const buyerProfile = await prisma.buyerProfile.findUnique({
       where: { user_id: req.user.user_id },
