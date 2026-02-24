@@ -11,6 +11,7 @@ import {
   updateListingStatus,
   getAllCategories,
   getSubcategoriesByParent,
+  getListingsByIds
 } from "../controllers/listingController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
@@ -43,5 +44,8 @@ router.post(
   addListingMedia
 );
 router.delete("/:id/media/:mediaId", authenticate, removeListingMedia);
+
+//for favourites post
+router.post("/by-ids", getListingsByIds);
 
 export default router;

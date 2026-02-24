@@ -11,6 +11,11 @@ import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import smartSearchRoutes from "./routes/smartSearch.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import platformFeedbackRoutes from "./routes/platformFeedbackRoutes.js";
+import favouriteRoutes from "./routes/favouriteRoutes.js";
+import searchRoutes from "./routes/search.js";
+
+
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -57,6 +62,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/listings", express.static(path.join(__dirname, "public/listings")));
 app.set("io", io);
 
 app.get("/", (req, res) => {
@@ -72,6 +78,11 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/get", smartSearchRoutes);
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/feedback", platformFeedbackRoutes);
+app.use("/api/favourites", favouriteRoutes);
+app.use("/api/search", searchRoutes);
+
 
 // Socket authentication middleware
 io.use(async (socket, next) => {

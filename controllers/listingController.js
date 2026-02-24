@@ -872,3 +872,53 @@ export const getSubcategoriesByParent = async (req, res) => {
     });
   }
 };
+
+
+/* ===============================
+   GET LISTINGS BY IDS (FOR FAVOURITES)
+=============================== */
+export const getListingsByIds = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "Invalid listing IDs" });
+    }
+
+    const listings = await prisma.serviceListing.findMany({
+      where: {
+        listing_id: {
+          in: ids.map((id) => parseInt(id)),
+        },
+        status: "active",
+      },
+      include: {
+        category: true,
+        subcategory: true,
+        seller: {
+          include: {
+            user: {
+              select: {
+                user_id: true,
+                email: true,
+                phone: true,
+                country: true,
+                state: true,
+                city: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        listing_media: {
+          orderBy: { sort_order: "asc" },
+        },
+      },
+    });
+
+    res.status(200).json(listings);
+  } catch (error) {
+    console.error("Error fetching listings by IDs:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
