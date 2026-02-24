@@ -1,28 +1,51 @@
 import meiliClient from "../config/meili.js";
 
 async function updateSettings() {
-  await meiliClient.index("services").updateSettings({
-    searchableAttributes: [
-      "title",
-      "description",
-      "category_name",
-      "seller_name",
-      "business_description",
-      "certifications",
-      "tags",
-      "service_cities",
-      "service_states",
-      "service_countries",
-      "service_type"
-    ],
-    sortableAttributes: [
-      "view_count",
-      "min_price",
-      "max_price"
-    ]
-  });
+  try {
+    const index = meiliClient.index("services");
 
-  console.log("✅ Meilisearch settings upgraded");
+    console.log("⚙ Updating Meilisearch settings...");
+
+    // 🔎 Filterable attributes
+     await index.updateFilterableAttributes([
+    "category_id",
+    "service_countries",
+    "service_states",
+    "service_cities",
+    "service_type",
+    "pricing_model",
+    "featured",
+    "seller_verification_status",
+    "seller_verified",
+    "min_price",
+    "max_price",
+  ]);
+
+  await index.updateSortableAttributes([
+    "max_price",
+    "min_price",
+    "created_at",
+    "view_count",
+  ]);
+
+  await index.updateSearchableAttributes([
+    "title",
+    "description",
+    "category_name",
+    "seller_name",
+    "business_description",
+    "certifications",
+    "tags",
+    "service_cities",
+    "service_states",
+    "service_countries",
+    "service_type",
+  ]);
+
+    console.log("✅ Meilisearch settings upgraded successfully");
+  } catch (error) {
+    console.error("❌ Error updating Meili settings:", error);
+  }
 }
 
 updateSettings();

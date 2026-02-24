@@ -14,42 +14,47 @@ async function syncServices() {
     });
 
     const formattedServices = services.map((service) => ({
-      listing_id: service.listing_id,
+  listing_id: service.listing_id,
 
-      // Core
-      title: service.title,
-      description: service.description,
+  // Core
+  title: service.title,
+  description: service.description,
 
-      // Pricing
-      min_price: service.min_price,
-      max_price: service.max_price,
-      pricing_model: service.pricing_model,
+  // Pricing
+  min_price: service.min_price,
+  max_price: service.max_price,
+  pricing_model: service.pricing_model,
 
-      // Type
-      service_type: service.service_type,
+  // Type
+  service_type: service.service_type,
 
-      // Location
-      service_cities: service.service_cities || [],
-      service_states: service.service_states || [],
-      service_countries: service.service_countries || [],
+  // Location
+  service_cities: service.service_cities || [],
+  service_states: service.service_states || [],
+  service_countries: service.service_countries || [],
 
-      // Tags
-      tags: service.tags || [],
+  // Tags
+  tags: service.tags || [],
 
-      // Seller info
-      seller_name: service.seller?.business_name,
-      business_description: service.seller?.business_description,
-      certifications: service.seller?.certifications,
+  // Seller info
+  seller_name: service.seller?.business_name,
+  business_description: service.seller?.business_description,
+  certifications: service.seller?.certifications,
 
-      // Category
-      category_name: service.category?.category_name,
+  // 👇 IMPORTANT
+  seller_verification_status: service.seller?.verification_status,
+  seller_verified:
+    service.seller?.verification_status === "verified",
 
-      // Ranking fields
-      featured: service.featured,
-      view_count: service.view_count,
-      seller_verified:
-        service.seller?.verification_status === "verified",
-    }));
+  // Category
+  category_name: service.category?.category_name,
+  category_id: service.category_id,   // 👈 IMPORTANT (for category filter)
+
+  // Ranking
+  featured: service.featured,
+  view_count: service.view_count,
+  created_at: service.created_at,     // 👈 required for newest sort
+}));
 
     // Clear old documents before re-adding
     await meiliClient.index("services").deleteAllDocuments();
