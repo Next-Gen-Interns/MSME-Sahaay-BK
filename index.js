@@ -15,6 +15,9 @@ import platformFeedbackRoutes from "./routes/platformFeedbackRoutes.js";
 import favouriteRoutes from "./routes/favouriteRoutes.js";
 import searchRoutes from "./routes/search.js";
 import searchFilterRoutes from "./routes/searchFilterRoutes.js";
+import expertRoutes from "./routes/expertRoutes.js";
+import adminExpertRoutes from "./routes/adminExpertRoutes.js";
+
 
 import path from "path";
 import cors from "cors";
@@ -83,6 +86,8 @@ app.use("/api/feedback", platformFeedbackRoutes);
 app.use("/api/favourites", favouriteRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/search/filters", searchFilterRoutes);
+app.use("/api/experts", expertRoutes);
+app.use("/api/admin/experts", adminExpertRoutes);
 
 
 // Socket authentication middleware

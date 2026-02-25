@@ -82,6 +82,7 @@ model SellerProfile {
   user                  User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   service_listings      ServiceListing[]
   business_addresses    BusinessAddress[]
+  expertProfile         ExpertProfile?
 
   @@map("sellerprofile")
 }
@@ -421,6 +422,29 @@ model PlatformFeedback {
   @@index([user_id])
   @@map("platformfeedback")
 }
+model ExpertProfile {
+  expert_id        Int      @id @default(autoincrement())
+  seller_id        Int      @unique
+
+  category         String
+  experience_years Int
+  expertise        Json
+  consultation_fee Float?
+  bio              String?  @db.LongText
+
+  is_verified      Boolean  @default(false)
+
+  consultation_listing_id Int?
+
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  seller SellerProfile @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+
+  @@index([is_verified])
+  @@map("expertprofile")
+}
+
 
 // Enums remain the same...
 enum SubscriptionStatus {
