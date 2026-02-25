@@ -7,7 +7,7 @@ async function main() {
   console.log("🌱 Starting database seeding...");
 
   // Seed categories
-  await seedCategories();
+  // await seedCategories();
 
   // Seed subscription plans
   await seedSubscriptionPlans();
@@ -498,156 +498,82 @@ async function seedCategories() {
 }
 
 async function seedSubscriptionPlans() {
-  console.log("💳 Seeding Subscription Plans...");
+  console.log("💳 Seeding Default Seller Subscription Plans...");
 
+  // Optional: delete existing plans (use only in dev)
   await prisma.subscriptionPlan.deleteMany();
 
+  const plans = [
+    {
+      name: "Free Seller",
+      description: "Basic plan for new sellers",
+      price: 0,
+      currency: "INR",
+      billing_cycle: "monthly",
+      plan_type: "seller",
+      features: {
+        analytics_access: false,
+        premium_support: false,
+      },
+      limits: {
+        service_listings: 2,
+        featured_listings: 0,
+        lead_access: 5,
+      },
+      is_active: true,
+      sort_order: 1,
+    },
+    {
+      name: "Starter Seller",
+      description: "Best for small growing businesses",
+      price: 999,
+      currency: "INR",
+      billing_cycle: "monthly",
+      plan_type: "seller",
+      features: {
+        analytics_access: true,
+        premium_support: false,
+      },
+      limits: {
+        service_listings: 10,
+        featured_listings: 1,
+        lead_access: 50,
+      },
+      is_active: true,
+      sort_order: 2,
+    },
+    {
+      name: "Growth Seller",
+      description: "Scale your business",
+      price: 2499,
+      currency: "INR",
+      billing_cycle: "monthly",
+      plan_type: "seller",
+      features: {
+        analytics_access: true,
+        premium_support: true,
+      },
+      limits: {
+        service_listings: 50,
+        featured_listings: 5,
+        lead_access: -1,
+      },
+      is_active: true,
+      sort_order: 3,
+    },
+  ];
+
   await prisma.subscriptionPlan.createMany({
-    data: [
-      /* ===========================
-         BUYER PLANS
-      ============================ */
-
-      {
-        name: "Buyer Basic",
-        description: "Free plan for buyers to explore services",
-        price: 0,
-        currency: "INR",
-        billing_cycle: "monthly",
-        plan_type: "buyer",
-        features: {
-          lead_creation: true,
-          premium_search: false,
-          saved_searches: 3,
-        },
-        limits: {
-          monthly_leads: 5,
-        },
-        is_active: true,
-        sort_order: 1,
-      },
-      {
-        name: "Buyer Pro",
-        description: "Advanced tools for serious buyers",
-        price: 499,
-        currency: "INR",
-        billing_cycle: "monthly",
-        plan_type: "buyer",
-        features: {
-          lead_creation: true,
-          premium_search: true,
-          saved_searches: 20,
-          project_management: true,
-        },
-        limits: {
-          monthly_leads: 50,
-        },
-        is_active: true,
-        sort_order: 2,
-      },
-
-      /* ===========================
-         SELLER PLANS
-      ============================ */
-
-      {
-        name: "Seller Starter",
-        description: "Basic visibility for MSMEs",
-        price: 999,
-        currency: "INR",
-        billing_cycle: "monthly",
-        plan_type: "seller",
-        features: {
-          service_listings: true,
-          featured_listings: false,
-          lead_access: true,
-          analytics_access: false,
-        },
-        limits: {
-          listings: 5,
-          monthly_leads: 20,
-        },
-        is_active: true,
-        sort_order: 3,
-      },
-      {
-        name: "Seller Growth",
-        description: "Boosted exposure & analytics access",
-        price: 2499,
-        currency: "INR",
-        billing_cycle: "monthly",
-        plan_type: "seller",
-        features: {
-          service_listings: true,
-          featured_listings: true,
-          lead_access: true,
-          analytics_access: true,
-          premium_support: true,
-        },
-        limits: {
-          listings: 20,
-          monthly_leads: 100,
-        },
-        is_active: true,
-        sort_order: 4,
-      },
-      {
-        name: "Seller Premium",
-        description: "Maximum growth plan for established businesses",
-        price: 4999,
-        currency: "INR",
-        billing_cycle: "monthly",
-        plan_type: "seller",
-        features: {
-          service_listings: true,
-          featured_listings: true,
-          lead_access: true,
-          analytics_access: true,
-          premium_support: true,
-          portfolio_items: true,
-        },
-        limits: {
-          listings: 100,
-          monthly_leads: 500,
-        },
-        is_active: true,
-        sort_order: 5,
-      },
-
-      /* ===========================
-         ENTERPRISE PLAN
-      ============================ */
-
-      {
-        name: "Enterprise",
-        description: "Custom enterprise solution for large organizations",
-        price: 24999,
-        currency: "INR",
-        billing_cycle: "yearly",
-        plan_type: "both",
-        features: {
-          unlimited_listings: true,
-          unlimited_leads: true,
-          dedicated_manager: true,
-          premium_support: true,
-        },
-        limits: {
-          listings: -1,
-          monthly_leads: -1,
-        },
-        is_active: true,
-        sort_order: 6,
-      },
-    ],
+    data: plans,
   });
 
-  console.log("✅ Subscription plans seeded successfully!");
+  console.log("✅ Default Seller Plans Seeded Successfully!");
 }
 
 main()
   .catch((e) => {
     console.error(e);
-    process.exit(1);
+    0;
   })
   .finally(async () => {
     await prisma.$disconnect();
