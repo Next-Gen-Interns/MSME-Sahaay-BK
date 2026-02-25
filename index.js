@@ -19,6 +19,7 @@ import expertRoutes from "./routes/expertRoutes.js";
 import adminExpertRoutes from "./routes/adminExpertRoutes.js";
 
 
+import supportRoutes from "./routes/supportRoutes.js";
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -89,6 +90,7 @@ app.use("/api/search/filters", searchFilterRoutes);
 app.use("/api/experts", expertRoutes);
 app.use("/api/admin/experts", adminExpertRoutes);
 
+app.use("/api/support", supportRoutes);
 
 // Socket authentication middleware
 io.use(async (socket, next) => {

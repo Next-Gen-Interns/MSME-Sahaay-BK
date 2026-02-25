@@ -24,7 +24,6 @@ export const addFavourite = async (req, res) => {
     });
 
     res.status(201).json({ message: "Added to favourites", favourite });
-
   } catch (error) {
     if (error.code === "P2002") {
       return res.status(400).json({ error: "Already in favourites" });
@@ -51,7 +50,6 @@ export const removeFavourite = async (req, res) => {
     });
 
     res.status(200).json({ message: "Removed from favourites" });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -64,22 +62,20 @@ export const removeFavourite = async (req, res) => {
 export const getMyFavourites = async (req, res) => {
   try {
     const favourites = await prisma.favourite.findMany({
-  where: {
-    user_id: req.user.user_id,
-  },
-  select: {
-    listing_id: true,
-  },
-});
+      where: {
+        user_id: req.user.user_id,
+      },
+      select: {
+        listing_id: true,
+      },
+    });
 
     res.status(200).json(favourites);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 export const getMyFavouritesDetailed = async (req, res) => {
   try {
