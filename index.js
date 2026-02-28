@@ -38,6 +38,7 @@ const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
     origin: [
+      "https://www.msmesahaay.com",
       "https://msmeguru.crmnextgen.in",
       "http://localhost:3000",
       "http://localhost:3001",
@@ -54,6 +55,7 @@ const __dirname = path.dirname(__filename);
 app.use(
   cors({
     origin: [
+      "https://www.msmesahaay.com",
       "https://msmeguru.crmnextgen.in",
       "http://localhost:3000",
       "http://localhost:3001",
