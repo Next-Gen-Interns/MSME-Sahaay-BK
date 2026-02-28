@@ -30,6 +30,7 @@ export const register = async (req, res) => {
         email,
         password: hashedPassword,
         role,
+        active_profile: role,
         fullname,
       },
     });
@@ -46,12 +47,23 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        buyerprofile: true,
+        sellerprofile: true,
+      },
+    });
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
     // Update last login
     await prisma.user.update({
@@ -59,23 +71,51 @@ export const login = async (req, res) => {
       data: { last_login: new Date() },
     });
 
+    // 🔥 Determine active profile properly
+    let activeProfile = user.active_profile;
+
+    // If not set yet, auto-assign based on available profiles
+    if (!activeProfile) {
+      if (user.sellerprofile) {
+        activeProfile = "seller";
+      } else {
+        activeProfile = "buyer";
+      }
+
+      // Persist it in DB
+      await prisma.user.update({
+        where: { user_id: user.user_id },
+        data: { active_profile: activeProfile },
+      });
+    }
+
+    // Generate JWT
     const token = jwt.sign(
-      { user_id: user.user_id, role: user.role },
+      {
+        user_id: user.user_id,
+        role: user.role, // only for admin checks
+        activeProfile,
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "1d" },
     );
 
-    res.json({
+    return res.json({
+      success: true,
       token,
       user: {
         user_id: user.user_id,
         email: user.email,
         fullname: user.fullname,
         role: user.role,
+        activeProfile,
+        hasBuyerProfile: !!user.buyerprofile,
+        hasSellerProfile: !!user.sellerprofile,
       },
     });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -197,7 +237,7 @@ export const verifyOTP = async (req, res) => {
         purpose: "password_reset",
       },
       process.env.JWT_SECRET,
-      { expiresIn: "15m" } // Short-lived token
+      { expiresIn: "15m" }, // Short-lived token
     );
 
     res.status(200).json({
@@ -305,4 +345,49 @@ export const logout = async (req, res) => {
       error: "Internal Server Error",
     });
   }
+};
+
+export const switchProfile = async (req, res) => {
+  const { profile } = req.body;
+
+  if (!["buyer", "seller"].includes(profile)) {
+    return res.status(400).json({ error: "Invalid profile" });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { user_id: req.user.user_id },
+    include: {
+      buyerprofile: true,
+      sellerprofile: true,
+    },
+  });
+
+  // if (profile === "buyer" && !user.buyerprofile) {
+  //   return res.status(400).json({ error: "Buyer profile not found" });
+  // }
+
+  // if (profile === "seller" && !user.sellerprofile) {
+  //   return res.status(400).json({ error: "Seller profile not found" });
+  // }
+
+  // ✅ Persist active profile
+  await prisma.user.update({
+    where: { user_id: user.user_id },
+    data: { active_profile: profile },
+  });
+
+  const newToken = jwt.sign(
+    {
+      user_id: user.user_id,
+      role: user.role,
+      activeProfile: profile,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" },
+  );
+
+  res.json({
+    message: "Profile switched successfully",
+    token: newToken,
+  });
 };

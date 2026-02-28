@@ -7,16 +7,13 @@ const prisma = new PrismaClient();
  */
 export const applyAsExpert = async (req, res) => {
   try {
-    const {
-      category,
-      experience_years,
-      expertise,
-      consultation_fee,
-      bio,
-    } = req.body;
+    const { category, experience_years, expertise, consultation_fee, bio } =
+      req.body;
 
-    if (req.user.role !== "seller") {
-      return res.status(403).json({ error: "Only sellers can apply as expert" });
+    if (req.user.activeProfileProfile !== "seller") {
+      return res
+        .status(403)
+        .json({ error: "Only sellers can apply as expert" });
     }
 
     const seller = await prisma.sellerProfile.findUnique({
@@ -139,11 +136,9 @@ export const updateExpertStatus = async (req, res) => {
   }
 };
 
-
-
 export const getMyExpertStatus = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfileProfile !== "seller") {
       return res.status(403).json({ error: "Only sellers allowed" });
     }
 
@@ -171,7 +166,6 @@ export const getMyExpertStatus = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 export const getAllExpertsAdmin = async (req, res) => {
   try {

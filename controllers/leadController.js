@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 // Create a new lead (Buyer sends inquiry to seller)
 // export const createLead = async (req, res) => {
 //   try {
-//     if (req.user.role !== "buyer") {
+//     if (req.activeProfile !== "buyer") {
 //       return res.status(403).json({ error: "Only buyers can create leads" });
 //     }
 
@@ -147,7 +147,7 @@ const prisma = new PrismaClient();
 export const createLead = async (req, res) => {
   try {
     // Remove the role restriction - allow any authenticated user
-    // if (req.user.role !== "buyer") {
+    // if (req.activeProfile !== "buyer") {
     //   return res.status(403).json({ error: "Only buyers can create leads" });
     // }
 
@@ -189,7 +189,7 @@ export const createLead = async (req, res) => {
     let sellerProfile = null;
 
     if (
-      user.role === "buyer" ||
+      req.user.activeProfile === "buyer" ||
       user.role === "super_admin" ||
       user.role === "admin" ||
       user.role === "access_admin"
@@ -201,7 +201,7 @@ export const createLead = async (req, res) => {
             "Buyer profile not found. Please complete your buyer profile first.",
         });
       }
-    } else if (user.role === "seller") {
+    } else if (req.user.activeProfile === "seller") {
       sellerProfile = user.sellerprofile;
       if (!sellerProfile) {
         return res.status(400).json({
@@ -229,9 +229,9 @@ export const createLead = async (req, res) => {
 
     // Prevent sellers from creating leads on their own listings
     if (
-      user.role === "seller" &&
-      listing.seller_id === sellerProfile?.seller_id
-    ) {
+  req.user.activeProfile === "seller" &&
+  listing.seller_id === sellerProfile?.seller_id
+) {
       return res.status(400).json({
         error: "You cannot create a lead for your own listing",
       });
@@ -375,7 +375,7 @@ async function getOrCreateBuyerProfileForSeller(userId, user, prisma) {
 // Get buyer's own leads
 export const getBuyerLeads = async (req, res) => {
   try {
-    // if (req.user.role !== "buyer") {
+    // if (req.activeProfile !== "buyer") {
     //   return res
     //     .status(403)
     //     .json({ error: "Only buyers can view their leads" });
@@ -462,7 +462,7 @@ export const getBuyerLeads = async (req, res) => {
 // Get seller's incoming leads
 export const getSellerLeads = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfile !== "seller") {
       return res
         .status(403)
         .json({ error: "Only sellers can view incoming leads" });
@@ -555,12 +555,12 @@ export const getLeadById = async (req, res) => {
     let where = { lead_id: parseInt(id) };
 
     // Add access control based on user role
-    if (req.user.role === "buyer") {
+    if (req.user.activeProfile === "buyer") {
       const buyerProfile = await prisma.buyerProfile.findUnique({
         where: { user_id: req.user.user_id },
       });
       where.buyer_id = buyerProfile.buyer_id;
-    } else if (req.user.role === "seller") {
+    } else if (req.user.activeProfile === "seller") {
       const sellerProfile = await prisma.sellerProfile.findUnique({
         where: { user_id: req.user.user_id },
       });
@@ -651,7 +651,7 @@ export const getLeadById = async (req, res) => {
 // Update lead status (Seller only)
 export const updateLeadStatus = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfile !== "seller") {
       return res
         .status(403)
         .json({ error: "Only sellers can update lead status" });

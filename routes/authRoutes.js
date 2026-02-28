@@ -6,6 +6,7 @@ import {
   verifyOTP,
   resetPassword,
   logout,
+  switchProfile
 } from "../controllers/authController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 
@@ -17,5 +18,6 @@ router.post("/forgot-password", requestPasswordReset);
 router.post("/verify-otp", verifyOTP);
 router.post("/reset-password", resetPassword);
 router.post("/logout", authenticate, logout);
+router.post("/switch-profile", authenticate, switchProfile);
 
 export default router;

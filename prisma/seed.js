@@ -7,7 +7,7 @@ async function main() {
   console.log("🌱 Starting database seeding...");
 
   // Seed categories
-  // await seedCategories();
+  await seedCategories();
 
   // Seed subscription plans
   await seedSubscriptionPlans();

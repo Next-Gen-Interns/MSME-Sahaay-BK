@@ -638,30 +638,47 @@ export const createSubscription = async (req, res) => {
       },
     });
 
+
+//       if (plan.plan_type === "seller" || plan.plan_type === "both") {
+//   const updateData = {
+//     role: "seller",
+//   };
+
+//   const sellerProfile = await prisma.sellerProfile.findUnique({
+//     where: { user_id: userId },
+//   });
+
+//   if (sellerProfile) {
+//     updateData.sellerprofile = {
+//       update: {
+//         subscription_plan: "premium",
+//       },
+//     };
+//   }
+
+//   await prisma.user.update({
+//     where: { user_id: userId },
+//     data: updateData,
+//   });
+// }
+
+
+
     // Update user role and seller profile if needed
-    if (plan.plan_type === "seller" || plan.plan_type === "both") {
-      const updateData = {
-        role: "seller",
-      };
+   if (plan.plan_type === "seller" || plan.plan_type === "both") {
+  const sellerProfile = await prisma.sellerProfile.findUnique({
+    where: { user_id: userId },
+  });
 
-      // Only update sellerprofile if it exists and user is becoming a seller
-      const sellerProfile = await prisma.sellerProfile.findUnique({
-        where: { user_id: userId },
-      });
-
-      if (sellerProfile) {
-        updateData.sellerprofile = {
-          update: {
-            subscription_plan: "premium",
-          },
-        };
-      }
-
-      await prisma.user.update({
-        where: { user_id: userId },
-        data: updateData,
-      });
-    }
+  if (sellerProfile) {
+    await prisma.sellerProfile.update({
+      where: { user_id: userId },
+      data: {
+        subscription_plan: "premium",
+      },
+    });
+  }
+}
 
     res.status(201).json({
       success: true,
@@ -722,10 +739,10 @@ export const cancelSubscription = async (req, res) => {
       subscription.plan.plan_type === "seller" ||
       subscription.plan.plan_type === "both"
     ) {
-      await prisma.user.update({
-        where: { user_id: userId },
-        data: { role: "buyer" }, // Default role
-      });
+      // await prisma.user.update({
+      //   where: { user_id: userId },
+      //   data: { role: "buyer" }, // Default role
+      // });
 
       // Also reset seller profile subscription plan if exists
       const sellerProfile = await prisma.sellerProfile.findUnique({

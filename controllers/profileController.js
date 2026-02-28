@@ -113,9 +113,10 @@ export const getUserProfile = async (req, res) => {
         is_verified: true,
         created_at: true,
         updated_at: true,
-        buyerprofile: req.user.role === "buyer",
-        sellerprofile: req.user.role === "seller",
+        buyerprofile: true,
+sellerprofile: true,
         user_documents: true,
+        active_profile: true,
       },
     });
 
@@ -132,7 +133,7 @@ export const getUserProfile = async (req, res) => {
     let roleProfileCompletion = 0;
     let totalProfileCompletion = userProfileCompletion;
 
-    if (req.user.role === "buyer" && user.buyerprofile) {
+    if (req.user.activeProfile === "buyer" && user.buyerprofile) {
       roleProfileCompletion = calculateBuyerProfileCompletion(
         user.buyerprofile,
       );
@@ -140,7 +141,7 @@ export const getUserProfile = async (req, res) => {
       totalProfileCompletion = Math.round(
         userProfileCompletion * 0.6 + roleProfileCompletion * 0.4,
       );
-    } else if (req.user.role === "seller" && user.sellerprofile) {
+    } else if (req.user.activeProfile === "seller" && user.sellerprofile) {
       roleProfileCompletion = calculateSellerProfileCompletion(
         user.sellerprofile,
       );
@@ -154,14 +155,15 @@ export const getUserProfile = async (req, res) => {
       success: true,
       data: {
         ...user,
+        activeProfile: user.active_profile,
         profile_completion: {
           user_profile: userProfileCompletion,
           role_profile: roleProfileCompletion,
           total: totalProfileCompletion,
         },
         role_profile_exists: !!(
-          (req.user.role === "buyer" && user.buyerprofile) ||
-          (req.user.role === "seller" && user.sellerprofile)
+          (req.user.activeProfile === "buyer" && user.buyerprofile) ||
+          (req.user.activeProfile === "seller" && user.sellerprofile)
         ),
         has_complete_profile: totalProfileCompletion >= 80,
       },
@@ -178,7 +180,7 @@ export const getUserProfile = async (req, res) => {
 // NEW: Create buyer profile
 export const createBuyerProfile = async (req, res) => {
   try {
-    if (req.user.role !== "buyer") {
+    if (req.user.activeProfile !== "buyer") {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -256,7 +258,7 @@ export const createBuyerProfile = async (req, res) => {
 
 export const getBuyerProfile = async (req, res) => {
   try {
-    if (req.user.role !== "buyer") {
+    if (req.user.activeProfile !== "buyer") {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -308,7 +310,7 @@ export const getBuyerProfile = async (req, res) => {
 
 export const updateBuyerProfile = async (req, res) => {
   try {
-    if (req.user.role !== "buyer") {
+    if (req.user.activeProfile !== "buyer") {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -375,7 +377,7 @@ export const updateBuyerProfile = async (req, res) => {
 // NEW: Create seller profile
 export const createSellerProfile = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfile !== "seller") {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -495,7 +497,7 @@ export const createSellerProfile = async (req, res) => {
 
 export const getSellerProfile = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfile !== "seller") {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -550,7 +552,7 @@ export const getSellerProfile = async (req, res) => {
 
 export const updateSellerProfile = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfile !== "seller") {
       return res.status(403).json({ error: "Forbidden" });
     }
 

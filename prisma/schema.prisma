@@ -40,7 +40,7 @@ model User {
   userSubscriptions     UserSubscription[]
   subscriptionUsages    SubscriptionUsage[]
   favourites            Favourite[]
-
+active_profile          ActiveProfile?
   @@map("user")
 }
 
@@ -455,6 +455,10 @@ enum SubscriptionStatus {
   incomplete
   incomplete_expired
   trialing
+}
+enum ActiveProfile {
+  buyer
+  seller
 }
 
 enum FeedbackStatus {

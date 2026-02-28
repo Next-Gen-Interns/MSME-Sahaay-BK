@@ -11,7 +11,8 @@ const prisma = new PrismaClient();
 // Create new service listing
 export const createListing = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    console.log("active profile ", req.user.activeProfile);
+    if (req.user.activeProfile !== "seller") {
       return res
         .status(403)
         .json({ error: "Only sellers can create listings" });
@@ -54,7 +55,7 @@ export const createListing = async (req, res) => {
     if (!sellerProfile) {
       return res.status(400).json({
         error:
-          "Seller profile not found. Please complete your seller profile first.",
+          "Seller profile not found. Please complete your seller profile first. Also add business details",
       });
     }
 
@@ -98,26 +99,26 @@ export const createListing = async (req, res) => {
           typeof service_countries === "string"
             ? JSON.parse(service_countries)
             : Array.isArray(service_countries)
-            ? service_countries
-            : [],
+              ? service_countries
+              : [],
         service_states:
           typeof service_states === "string"
             ? JSON.parse(service_states)
             : Array.isArray(service_states)
-            ? service_states
-            : [],
+              ? service_states
+              : [],
         service_cities:
           typeof service_cities === "string"
             ? JSON.parse(service_cities)
             : Array.isArray(service_cities)
-            ? service_cities
-            : [],
+              ? service_cities
+              : [],
         tags:
           typeof tags === "string"
             ? JSON.parse(tags)
             : Array.isArray(tags)
-            ? tags
-            : [],
+              ? tags
+              : [],
         status: "draft",
         featured: false,
         view_count: 0,
@@ -373,7 +374,7 @@ export const getListingById = async (req, res) => {
 // Get current user's listings
 export const getUserListings = async (req, res) => {
   try {
-    if (req.user.role !== "seller") {
+    if (req.user.activeProfile !== "seller") {
       return res
         .status(403)
         .json({ error: "Only sellers can view their listings" });
@@ -704,14 +705,14 @@ export const addListingMedia = async (req, res) => {
             file_type: file.mimetype.startsWith("image/")
               ? "image"
               : file.mimetype.startsWith("video/")
-              ? "video"
-              : "document",
+                ? "video"
+                : "document",
             caption: req.body.captions ? req.body.captions[index] : "",
             sort_order: nextSortOrder + index,
             listing_id: parseInt(id),
           },
         });
-      })
+      }),
     );
 
     res.status(201).json({
@@ -872,7 +873,6 @@ export const getSubcategoriesByParent = async (req, res) => {
     });
   }
 };
-
 
 /* ===============================
    GET LISTINGS BY IDS (FOR FAVOURITES)
